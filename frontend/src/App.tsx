@@ -956,7 +956,7 @@ export default function App() {
     trap: false,
     spire: false,
   });
-  const [mapLayer, setMapLayer] = useState<"daylight" | "hot">("daylight");
+  const [mapLayer, setMapLayer] = useState<"voyager" | "antique">("voyager");
 
   // Interactive HP Gameplay State
   const [broomstickActive, setBroomstickActive] = useState(false);
@@ -2777,9 +2777,9 @@ export default function App() {
               key={mapLayer}
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               url={
-                mapLayer === "hot"
-                  ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                  : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                mapLayer === "antique"
+                  ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                  : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               }
               subdomains="abcd"
               maxZoom={20}
@@ -3224,19 +3224,19 @@ export default function App() {
           <div className="map-view-switcher" title="Switch Map Clarity & Surroundings Style">
             <button
               type="button"
-              className={`view-toggle-btn ${mapLayer === "daylight" ? "active" : ""}`}
-              onClick={() => setMapLayer("daylight")}
-              title="Daylight Clear Map (High clarity roads & surroundings)"
+              className={`view-toggle-btn ${mapLayer === "voyager" ? "active" : ""}`}
+              onClick={() => setMapLayer("voyager")}
+              title="Vibrant High-Definition Cartography (High clarity roads & surroundings)"
             >
-              ☀️ Daylight Clear
+              🗺️ Vibrant HD
             </button>
             <button
               type="button"
-              className={`view-toggle-btn ${mapLayer === "hot" ? "active" : ""}`}
-              onClick={() => setMapLayer("hot")}
-              title="Vibrant High-Contrast Street Map"
+              className={`view-toggle-btn ${mapLayer === "antique" ? "active" : ""}`}
+              onClick={() => setMapLayer("antique")}
+              title="Antique Parchment Style Map"
             >
-              🗺️ Vibrant HD
+              📜 Parchment
             </button>
           </div>
 
