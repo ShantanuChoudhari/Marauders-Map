@@ -2775,12 +2775,14 @@ export default function App() {
           <MapContainer center={[position.lat, position.lng]} zoom={Number(import.meta.env.VITE_MAP_ZOOM ?? 15)} zoomControl={false} className="game-map">
             <TileLayer
               key={mapLayer}
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               url={
                 mapLayer === "hot"
-                  ? "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
-                  : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                  : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               }
+              subdomains="abcd"
+              maxZoom={20}
             />
             <MapResize refresh={mapRefresh} />
             <ZoomControl position="bottomright" />
