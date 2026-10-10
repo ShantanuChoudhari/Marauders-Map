@@ -956,7 +956,7 @@ export default function App() {
     trap: false,
     spire: false,
   });
-  const [mapLayer, setMapLayer] = useState<"voyager" | "antique">("voyager");
+  const [mapLayer, setMapLayer] = useState<"street" | "topo">("street");
 
   // Interactive HP Gameplay State
   const [broomstickActive, setBroomstickActive] = useState(false);
@@ -2775,14 +2775,13 @@ export default function App() {
           <MapContainer center={[position.lat, position.lng]} zoom={Number(import.meta.env.VITE_MAP_ZOOM ?? 15)} zoomControl={false} className="game-map">
             <TileLayer
               key={mapLayer}
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              attribution='&copy; <a href="https://www.esri.com/">Esri</a>, OpenStreetMap contributors'
               url={
-                mapLayer === "antique"
-                  ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-                  : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+                mapLayer === "topo"
+                  ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+                  : "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
               }
-              subdomains="abcd"
-              maxZoom={20}
+              maxZoom={19}
             />
             <MapResize refresh={mapRefresh} />
             <ZoomControl position="bottomright" />
@@ -3224,19 +3223,19 @@ export default function App() {
           <div className="map-view-switcher" title="Switch Map Clarity & Surroundings Style">
             <button
               type="button"
-              className={`view-toggle-btn ${mapLayer === "voyager" ? "active" : ""}`}
-              onClick={() => setMapLayer("voyager")}
-              title="Vibrant High-Definition Cartography (High clarity roads & surroundings)"
+              className={`view-toggle-btn ${mapLayer === "street" ? "active" : ""}`}
+              onClick={() => setMapLayer("street")}
+              title="Parchment Street Map (High clarity roads, districts & surroundings)"
             >
-              🗺️ Vibrant HD
+              📜 Living Parchment
             </button>
             <button
               type="button"
-              className={`view-toggle-btn ${mapLayer === "antique" ? "active" : ""}`}
-              onClick={() => setMapLayer("antique")}
-              title="Antique Parchment Style Map"
+              className={`view-toggle-btn ${mapLayer === "topo" ? "active" : ""}`}
+              onClick={() => setMapLayer("topo")}
+              title="Topographic Terrain & Elevation Map"
             >
-              📜 Parchment
+              ⛰️ Topographic
             </button>
           </div>
 
