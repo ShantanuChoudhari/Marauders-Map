@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: Wayfinder
+    orgId: 1
+    folder: Wayfinder
+    type: file
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

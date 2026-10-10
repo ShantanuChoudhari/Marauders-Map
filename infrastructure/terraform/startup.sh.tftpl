@@ -1,0 +1,51 @@
+#!/bin/bash
+set -euo pipefail
+apt-get update
+apt-get install -y docker.io curl ca-certificates gnupg
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" >/etc/apt/sources.list.d/google-cloud-sdk.list
+apt-get update
+apt-get install -y google-cloud-cli
+systemctl enable --now docker
+gcloud auth configure-docker '${artifact_registry_region}-docker.pkg.dev' --quiet
+curl -sS https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh -o /tmp/add-google-cloud-ops-agent-repo.sh
+bash /tmp/add-google-cloud-ops-agent-repo.sh --also-install
+cat >/etc/google-cloud-ops-agent/config.yaml <<'OPS_AGENT_CONFIG'
+logging:
+  receivers:
+    docker:
+      type: files
+      include_paths: [/var/lib/docker/containers/*/*.log]
+      record_log_file_path: true
+  processors:
+    parse_docker_json:
+      type: parse_json
+      field: message
+  service:
+    pipelines:
+      docker:
+        receivers: [docker]
+        processors: [parse_docker_json]
+OPS_AGENT_CONFIG
+systemctl restart google-cloud-ops-agent
+mkdir -p /opt/wayfinder
+DB_PASSWORD="$(gcloud secrets versions access latest --secret='${db_password_secret}')"
+JWT_SECRET="$(gcloud secrets versions access latest --secret='${jwt_secret_name}')"
+REDIS_AUTH="$(gcloud secrets versions access latest --secret='${redis_auth_secret}')"
+gcloud secrets versions access latest --secret='${redis_ca_secret}' >/opt/wayfinder-redis-ca.pem
+chmod 644 /opt/wayfinder-redis-ca.pem
+docker network create wayfinder || true
+docker rm -f wayfinder-sql-proxy || true
+docker run -d --restart=always --name wayfinder-sql-proxy --network wayfinder gcr.io/cloud-sql-connectors/cloud-sql-proxy:2 \
+  --private-ip --address 0.0.0.0 '${sql_instance_connection_name}'
+docker pull '${backend_image}'
+docker pull '${frontend_image}'
+docker rm -f wayfinder-api wayfinder-web || true
+docker run -d --restart=always --name wayfinder-api --network wayfinder \
+  -e NODE_ENV=production -e PORT=3001 -e SERVER_ID="$(hostname)" \
+  -e TRUST_PROXY_HOPS=2 \
+  -e CLIENT_ORIGIN="https://${domain}" -e JWT_SECRET="$JWT_SECRET" \
+  -e DATABASE_URL="postgres://wayfinder_app:$${DB_PASSWORD}@wayfinder-sql-proxy:5432/${db_name}" \
+  -e REDIS_URL="rediss://default:$${REDIS_AUTH}@${redis_host}:${redis_port}" -e REDIS_TLS_CA=/run/secrets/redis-ca.pem \
+  -v /opt/wayfinder-redis-ca.pem:/run/secrets/redis-ca.pem:ro '${backend_image}'
+docker run -d --restart=always --name wayfinder-web --network wayfinder -p 8080:8080 '${frontend_image}'

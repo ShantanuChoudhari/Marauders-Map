@@ -1,0 +1,21 @@
+# ══════════════════════════════════════════════════════════════════
+# FLY.IO CONFIGURATION FOR REAL-TIME .IO GAME
+# High-performance edge deployment with WebSocket support
+# ══════════════════════════════════════════════════════════════════
+
+app = "marauders-map-io"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

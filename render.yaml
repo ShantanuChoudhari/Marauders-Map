@@ -1,0 +1,22 @@
+# ══════════════════════════════════════════════════════════════════
+# RENDER.COM 1-CLICK DEPLOYMENT BLUEPRINT
+# Deploy the Marauder's Map multiplayer .io game with zero config
+# ══════════════════════════════════════════════════════════════════
+
+services:
+  - type: web
+    name: marauders-map-io
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        value: "*"
+      # Optional: attach a PostgreSQL database on Render for permanent persistence.
+      # If omitted, game runs in lightning-fast in-memory demo mode.

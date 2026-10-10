@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: wayfinder
+      POSTGRES_USER: wayfinder
+      POSTGRES_PASSWORD: wayfinder-local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wayfinder -d wayfinder"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "192mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      CLIENT_ORIGIN: http://localhost:8080,http://localhost:5173
+      JWT_SECRET: ${JWT_SECRET:-local-compose-secret-change-me-32chars}
+      DATABASE_URL: postgres://wayfinder:wayfinder-local@postgres:5432/wayfinder
+      REDIS_URL: redis://redis:6379
+      SERVER_ID: compose-game-1
+      API_RATE_LIMIT_MAX: ${API_RATE_LIMIT_MAX:-10000}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-10000}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ["3001:3001"]
+    restart: unless-stopped
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on: [backend]
+    ports: ["8080:8080"]
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: [monitoring]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--web.enable-lifecycle"]
+    volumes: ["./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro", "prometheus_data:/prometheus"]
+    ports: ["9090:9090"]
+    depends_on: [backend]
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: [monitoring]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-change-this-local-password}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

@@ -1,0 +1,8 @@
+project_id = "YOUR_GCP_PROJECT_ID"
+region = "asia-south1"
+zone = "asia-south1-a"
+domain = "play.example.com"
+backend_image = "asia-south1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/wayfinder/backend:RELEASE_TAG"
+frontend_image = "asia-south1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/wayfinder/frontend:RELEASE_TAG"
+min_replicas = 2
+max_replicas = 5

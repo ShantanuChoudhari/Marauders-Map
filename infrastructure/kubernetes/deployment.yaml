@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wayfinder-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: wayfinder-api }
+  template:
+    metadata:
+      labels: { app: wayfinder-api }
+    spec:
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: wayfinder-runtime
+      volumes:
+        - name: redis-ca
+          secret:
+            secretName: wayfinder-redis-ca
+            items: [{ key: redis-ca.pem, path: redis-ca.pem }]
+      containers:
+        - name: api
+          image: asia-south1-docker.pkg.dev/REPLACE_PROJECT/wayfinder/backend:REPLACE_TAG
+          ports: [{ name: http, containerPort: 3001 }]
+          envFrom:
+            - configMapRef: { name: wayfinder-config }
+            - secretRef: { name: wayfinder-secrets }
+          env:
+            - { name: REDIS_TLS_CA, value: /run/wayfinder-secrets/redis-ca.pem }
+          readinessProbe: { httpGet: { path: /ready, port: http }, initialDelaySeconds: 5, periodSeconds: 10 }
+          livenessProbe: { httpGet: { path: /health, port: http }, initialDelaySeconds: 15, periodSeconds: 20 }
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { cpu: "1", memory: 768Mi }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, runAsNonRoot: true, runAsUser: 1000, capabilities: { drop: [ALL] } }
+          volumeMounts:
+            - { name: redis-ca, mountPath: /run/wayfinder-secrets, readOnly: true }
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
+          args: ["--private-ip", "--address=0.0.0.0", "REPLACE_PROJECT:asia-south1:wayfinder-postgres"]
+          securityContext: { allowPrivilegeEscalation: false, runAsNonRoot: true, runAsUser: 65532, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wayfinder-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: wayfinder-web }
+  template:
+    metadata:
+      labels: { app: wayfinder-web }
+    spec:
+      containers:
+        - name: web
+          image: asia-south1-docker.pkg.dev/REPLACE_PROJECT/wayfinder/frontend:REPLACE_TAG
+          ports: [{ name: http, containerPort: 8080 }]
+          readinessProbe: { httpGet: { path: /health, port: http }, initialDelaySeconds: 3, periodSeconds: 10 }
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, runAsNonRoot: true, runAsUser: 101, capabilities: { drop: [ALL] } }
+          volumeMounts:
+            - { name: nginx-cache, mountPath: /var/cache/nginx }
+            - { name: nginx-run, mountPath: /var/run }
+            - { name: nginx-tmp, mountPath: /tmp }
+      volumes:
+        - { name: nginx-cache, emptyDir: {} }
+        - { name: nginx-run, emptyDir: {} }
+        - { name: nginx-tmp, emptyDir: {} }

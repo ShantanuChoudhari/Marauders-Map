@@ -1,0 +1,15 @@
+{
+  "name": "wayfinder-real-time-game",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["shared", "backend", "frontend"],
+  "overrides": { "shell-quote": "^1.12.0" },
+  "scripts": {
+    "start": "node backend/dist/server.js",
+    "dev": "concurrently -k -n api,web -c cyan,green \"npm:dev --workspace=backend\" \"npm:dev --workspace=frontend\"",
+    "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
+    "typecheck": "npm run build --workspace=shared && npm run typecheck --workspace=shared && npm run typecheck --workspace=backend && npm run typecheck --workspace=frontend",
+    "test": "node --test backend/test/social-room.test.mjs"
+  },
+  "devDependencies": { "concurrently": "^9.1.2", "typescript": "^5.7.3" }
+}
